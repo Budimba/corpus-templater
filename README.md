@@ -17,7 +17,7 @@ placeholder values for things such as work title, movement title, composer, etc.
 
 Your browser then prompts you to save the resulting template score somewhere on your device.
 
-### Offline usage not supported
+### Offline usage
 
 You may host this site on localhost with e.g. nginx. Owing to the security policies of most web browsers,
 the templater only works when it's accessed via a proper HTTP or HTTPS web server.
