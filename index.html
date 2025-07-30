@@ -369,17 +369,14 @@ function add_time_signatures() {
 		i.addEventListener('focus', on_focus);
 
 		function on_focus() { // If no more lines below focus, add a line
-			this.select();
 			if (line_num + 1 == num) {
 				add_line(num);
 				num++;
 			}
-			if (!this.auto || this.value != '') {
-				return;
-			}
-			if (this.pref == 'page' || (this.pref == 'system' && document.getElementById(`page${this.num}`).value == document.getElementById(`page${this.num - 1}`).value)) {
+			if (this.auto && this.value == '' && (this.pref == 'page' || this.pref == 'system' && document.getElementById(`page${this.num}`).value == document.getElementById(`page${this.num - 1}`).value)) {
 				this.value = document.getElementById(this.pref + (this.num - 1)).value;
 			}
+			this.select();
 		}
 	}
 
@@ -488,17 +485,14 @@ function add_rehearsal_marks() {
 		i.size = 2;
 		row.insertCell().appendChild(i);
 		function on_focus() {
-			this.select();
 			if (line_num + 1 == num) {
 				add_line(num);
 				num++;
 			}
-			if (!this.auto || this.value != '') {
-				return;
-			}
-			if (this.pref == 'page' || (this.pref == 'system' && document.getElementById(`page${this.num}`).value == document.getElementById(`page${this.num - 1}`).value)) {
+			if (this.auto && this.value == '' && (this.pref == 'page' || this.pref == 'system' && document.getElementById(`page${this.num}`).value == document.getElementById(`page${this.num - 1}`).value)) {
 				this.value = document.getElementById(this.pref + (this.num - 1)).value;
 			}
+			this.select();
 		}
 		i.addEventListener('focus', on_focus);
 		i = document.createElement('input');
@@ -637,18 +631,15 @@ function add_barlines() {
 		i.addEventListener('focus', on_focus);
 
 		function on_focus() {
-			this.select();
 			t = this.parentElement.parentElement.parentElement.parentElement;
 			if (line_num + 1 == t.num) {
 				add_line(t.num, t);
 				t.num++;
 			}
-			if (!this.auto || this.value != '') {
-				return;
-			}
-			if (this.pref == `${table.id}_page` || (this.pref == `${table.id}_system` && document.getElementById(`${table.id}_page${this.num}`).value == document.getElementById(`${table.id}_page${this.num - 1}`).value)) {
+			if (this.auto && this.value == '' && (this.pref == `${table.id}_page` || this.pref == `${table.id}_system` && document.getElementById(`${table.id}_page${this.num}`).value == document.getElementById(`${table.id}_page${this.num - 1}`).value)) {
 				this.value = document.getElementById(this.pref + (this.num - 1)).value;
 			}
+			this.select();
 		}
 	}
 
@@ -732,7 +723,6 @@ function add_key_signatures() {
 		i.size = 2;
 		row.insertCell().appendChild(i);
 		function on_focus() {
-			this.select();
 			if (line_num + 1 == num) {
 				add_line(num);
 				num++;
@@ -740,9 +730,10 @@ function add_key_signatures() {
 			if (!this.auto || this.value != '') {
 				return;
 			}
-			if (this.pref == 'page' || (this.pref == 'system' && document.getElementById(`page${this.num}`).value == document.getElementById(`page${this.num - 1}`).value)) {
+			if (this.auto && this.value == '' && (this.pref == 'page' || this.pref == 'system' && document.getElementById(`page${this.num}`).value == document.getElementById(`page${this.num - 1}`).value)) {
 				this.value = document.getElementById(this.pref + (this.num - 1)).value;
 			}
+			this.select();
 		}
 		i.addEventListener('focus', on_focus);
 		i = document.createElement('input');
