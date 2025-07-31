@@ -153,11 +153,11 @@ function count_movements(pieces) {
 
 function count_pages() {
 	document.getElementById('div').remove();
-	document.body.innerHTML += `<div id="div"><br/>The last page is Page <input id="last_page" type="number" size="2" autoselect value="${page_offset + movements - 1}"></input>&nbsp;<button type="button" id="nxt">Next</button>&nbsp;<button type="button" onclick="start_over();">Start over</button></div>`;
+	document.body.innerHTML += `<div id="div"><br/>The last page is Page <input id="last_page" type="number" size="2"></input>&nbsp;<button type="button" id="nxt">Next</button>&nbsp;<button type="button" onclick="start_over();">Start over</button></div>`;
+	document.getElementById('last_page').value = total_pages == undefined ? page_offset + movements - 1 : total_pages + page_offset - 1;
 	document.getElementById('last_page').select();
 	document.getElementById('nxt').onclick = function() {
 		total_pages = parseInt(document.getElementById('last_page').value, 10) - page_offset + 1;
-		page = new Array(total_pages); // Default value = undefined
 		count_systems();
 	};
 }
@@ -181,7 +181,8 @@ function count_systems() {
 		row1.insertCell().appendChild(document.createTextNode(`${i + page_offset}`));
 		input_array.push(document.createElement('input'));
 		input_array[i].size = '1';
-		input_array[i].value = '4';
+		// The user may've been sent back here to correct an error. In that case, fill in the previous data
+		input_array[i].value = page == undefined ? '4' : page[i];
 		input_array[i].parent = input_array; // Backdoor for update_array
 		input_array[i].num = i; // Backdoor for update_array
 		row2.insertCell().appendChild(input_array[i]);
@@ -191,15 +192,14 @@ function count_systems() {
 	input_array[0].select();
 	let next_btn = document.createElement('button');
 	systems_max = 0;
-	system = new Array(total_pages);
 	next_btn.innerHTML = 'Next';
 	next_btn.onclick = function() {
+		page = new Array(total_pages); // Default value = undefined
 		for (i = 0; i < total_pages; i++) {
 			page[i] = parseInt(input_array[i].value, 16);
 			if (systems_max < page[i]) {
 				systems_max = page[i];
 			}
-			system[i] = new Array(page[i]);
 		}
 		end_of_movements();
 	};
@@ -236,6 +236,8 @@ function end_of_movements() {
 		input_array[i][1].value = '-1';
 		input_array[i][0].addEventListener('focus', function(){this.select();});
 		input_array[i][1].addEventListener('focus', function(){this.select();});
+		input_array[i][0].addEventListener('input', function(){this.style.color = 'black';});
+		input_array[i][1].addEventListener('input', function(){this.style.color = 'black';});
 		row.insertCell().appendChild(input_array[i][0]);
 		row.insertCell().appendChild(input_array[i][1]);
 	}
@@ -244,12 +246,24 @@ function end_of_movements() {
 	next_btn.innerHTML = 'Next';
 	next_btn.onclick = function() {
 		section_break = new Array(total_pages);
+		let sys;
 		for (i = 0; i < total_pages; i++) {
 			section_break[i] = new Array(page[i]);
 		}
 		for (i = 0; i < movements - 1; i++) {
 			let pg = minus_to_plus(parseInt(input_array[i][0].value, 10), total_pages + page_offset, page_offset);
-			section_break[pg][minus_to_plus(parseInt(input_array[i][1].value, 10), page[pg] + 1)] = true;
+			if (pg < 0 || pg >= total_pages) {
+				input_array[i][0].style.color = 'red';
+				inconsistency('page', 'Page');
+				return;
+			}
+			sys = minus_to_plus(parseInt(input_array[i][1].value, 10), page[pg] + 1);
+			if (sys < 0 || sys >= page[pg]) {
+				input_array[i][1].style.color = 'red';
+				inconsistency('system', 'System');
+				return;
+			}
+			section_break[pg][sys] = true;
 		}
 		section_break[total_pages - 1][page[total_pages - 1] - 1] = true;
 		count_measures();
@@ -283,7 +297,7 @@ function count_measures() {
 		for (j = 0; j < page[i]; j++) {
 			input_array.push(document.createElement('input'));
 			input_array[total_systems].size = '1';
-			input_array[total_systems].value = '1'; // By default, each system has 1 measure
+			input_array[total_systems].value = system == undefined ? '1' : system[i][j]; // By default, each system has 1 measure
 			input_array[total_systems].parent = input_array; // Backdoor for update_array
 			input_array[total_systems].num = total_systems; // Backdoor for update_array
 			row.insertCell().appendChild(input_array[total_systems]);
@@ -298,10 +312,35 @@ function count_measures() {
 	next_btn.innerHTML = 'Next';
 	next_btn.onclick = function(e, fin = false) {
 		let k = 0;
+		system = new Array(total_pages);
 		for (i = 0; i < total_pages; i++) {
+			system[i] = new Array(page[i]);
 			for (j = 0; j < page[i]; j++) {
 				system[i][j] = parseInt(input_array[k].value, 16);
 				k++;
+			}
+		}
+			// Initialize measure[][][]. Can't do .fill({}) as they all point to a single {}	
+		measure = new Array(total_pages);
+		for (i = 0; i < total_pages; i++) {
+			measure[i] = new Array(page[i]);
+		}
+		for (i = 0; i < total_pages; i++) {
+			for (j = 0; j < page[i]; j++) {
+				measure[i][j] = new Array(system[i][j]);
+			}
+		}
+		measure_linear = [];
+		for (i = 0; i < total_pages; i++) {
+			for (j = 0; j < page[i]; j++) {
+				for (k = 0; k < system[i][j]; k++) {
+					measure[i][j][k] = {coord : [i, j, k]};
+					measure_linear.push(measure[i][j][k]);
+					measure[i][j][k].pos = measure_linear.length - 1;
+				}
+				if (section_break[i][j]) {
+					measure[i][j][system[i][j] - 1].barline = 'end'; // Can be overridden later
+				}
 			}
 		}
 		fin ? finish() : add_time_signatures();
@@ -321,7 +360,7 @@ function add_time_signatures() {
 	document.getElementById('div').remove();
 	let div = document.createElement('div');
 	div.id = 'div';
-	div.innerHTML = '<b>Scroll through the score, and record all time signatures. Try not to miss any.</b><br/>(If you missed some and need to add them later in MuseScore, press Ctrl before dragging the time signatures, so as to not ruin the layout. Do this for every voice.)<br/>(You can use the Tab key.)</br>More lines will appear as you type. It\'s okay to leave lines empty.</br>Use negative numbers to count from the right/bottom, e.g., -2 (2nd last page/measure/system).</br>';
+	div.innerHTML = '<b>Scroll through the score, and record all time signatures. Try not to miss any.</b><br/>(If you missed some and need to add them later in MuseScore, press Ctrl before dragging the time signatures, so as to not ruin the layout. Do this for every voice.)<br/>(You can use the Tab key.)</br>For common time, enter 4/4 appease the wizard, and change it later in MuseScore.</br>More lines will appear as you type. It\'s okay to leave lines empty.</br>Use negative numbers to count from the right/bottom, e.g., -2 (2nd last page/measure/system).</br>';
 	document.body.appendChild(div);
 	let table = document.createElement('table');
 	let num = 1;
@@ -343,6 +382,7 @@ function add_time_signatures() {
 		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
+		i.addEventListener('input', function(){this.style.color = 'black';});
 		i = document.createElement('input');
 		i.id = 'system' + line_num;
 		i.num = line_num;
@@ -351,11 +391,13 @@ function add_time_signatures() {
 		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
+		i.addEventListener('input', function(){this.style.color = 'black';});
 		i = document.createElement('input');
 		i.id = 'measure' + line_num;
 		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
+		i.addEventListener('input', function(){this.style.color = 'black';});
 		i = document.createElement('input');
 		i.id = 'top' + line_num;
 		i.size = 1;
@@ -382,36 +424,12 @@ function add_time_signatures() {
 
 	add_line(0);
 	document.getElementById('page0').value = page_offset;
-	document.getElementById('system0').value = 1;
-	document.getElementById('measure0').value = 1;
-	document.getElementById('top0').value = 3;
-	document.getElementById('bottom0').value = 4;
+	document.getElementById('system0').value = '1';
+	document.getElementById('measure0').value = '1';
+	document.getElementById('top0').value = '3';
+	document.getElementById('bottom0').value = '4';
 	document.getElementById('top0').select();
 
-	// Initialize measure[][][]. Can't do .fill({}) as they all point to a single {}	
-	measure = new Array(total_pages);
-	let i, j, k;
-	for (i = 0; i < total_pages; i++) {
-		measure[i] = new Array(page[i]);
-	}
-	for (i = 0; i < total_pages; i++) {
-		for (j = 0; j < page[i]; j++) {
-			measure[i][j] = new Array(system[i][j]);
-		}
-	}
-	measure_linear = [];
-	for (i = 0; i < total_pages; i++) {
-		for (j = 0; j < page[i]; j++) {
-			for (k = 0; k < system[i][j]; k++) {
-				measure[i][j][k] = {coord : [i, j, k]};
-				measure_linear.push(measure[i][j][k]);
-				measure[i][j][k].pos = measure_linear.length - 1;
-			}
-			if (section_break[i][j]) {
-				measure[i][j][system[i][j] - 1].barline = 'end'; // Can be overridden later
-			}
-		}
-	}
 	let next_btn = document.createElement('button');
 	next_btn.innerHTML = 'Next';
 	next_btn.onclick = function(e, fin = false) {
@@ -420,8 +438,23 @@ function add_time_signatures() {
 			if (isNaN(pg)) { // Ignore empty lines
 				continue;
 			}
-			let sys = minus_to_plus(parseInt(document.getElementById('system'+i).value, 10), page[pg] + 1) ;
+			if (pg < 0 || pg >= total_pages) {
+				document.getElementById('page'+i).style.color = 'red';
+				inconsistency('page', 'Page');
+				return;
+			}
+			let sys = minus_to_plus(parseInt(document.getElementById('system'+i).value, 10), page[pg] + 1);
+			if (sys < 0 || sys >= page[pg]) {
+				document.getElementById('system'+i).style.color = 'red';
+				inconsistency('system', 'System');
+				return;
+			}
 			let bar = minus_to_plus(parseInt(document.getElementById('measure'+i).value, 10), system[pg][sys] + 1);
+			if (bar < 0 || bar >= system[pg][sys]) {
+				document.getElementById('measure'+i).style.color = 'red';
+				inconsistency('measure', 'Measure');
+				return;
+			}
 			measure[pg][sys][bar].time = [parseInt(document.getElementById('top'+i).value, 10), parseInt(document.getElementById('bottom'+i).value, 10)];
 		}
 		// Fill in duration[][][]
@@ -495,19 +528,22 @@ function add_rehearsal_marks() {
 			this.select();
 		}
 		i.addEventListener('focus', on_focus);
+		i.addEventListener('input', function(){this.style.color = 'black';});
 		i = document.createElement('input');
 		i.id = 'system' + line_num;
 		i.pref = 'system';
 		i.auto = line_num == 0 ? false : true;
 		i.num = line_num;
-		i.size = 1;
+		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
+		i.addEventListener('input', function(){this.style.color = 'black';});
 		i = document.createElement('input');
 		i.id = 'measure' + line_num;
-		i.size = 1;
+		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
+		i.addEventListener('input', function(){this.style.color = 'black';});
 		i = document.createElement('input');
 		i.id = 'mark' + line_num;
 		i.size = 1;
@@ -537,8 +573,23 @@ function add_rehearsal_marks() {
 			if (isNaN(pg)) {
 				continue;
 			}
-			let sys = minus_to_plus(parseInt(document.getElementById('system'+i).value, 10), page[pg] + 1) ;
+			if (pg < 0 || pg >= total_pages) {
+				document.getElementById('page'+i).style.color = 'red';
+				inconsistency('page', 'Page');
+				return;
+			}
+			let sys = minus_to_plus(parseInt(document.getElementById('system'+i).value, 10), page[pg] + 1);
+			if (sys < 0 || sys >= page[pg]) {
+				document.getElementById('system'+i).style.color = 'red';
+				inconsistency('system', 'System');
+				return;
+			}
 			let bar = minus_to_plus(parseInt(document.getElementById('measure'+i).value, 10), system[pg][sys] + 1);
+			if (bar < 0 || bar >= system[pg][sys]) {
+				document.getElementById('measure'+i).style.color = 'red';
+				inconsistency('measure', 'Measure');
+				return;
+			}
 			measure[pg][sys][bar].rehearsal_mark = document.getElementById('mark'+i).value;
 		}
 		fin ? finish() : add_barlines();
@@ -616,6 +667,7 @@ function add_barlines() {
 		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
+		i.addEventListener('input', function(){this.style.color = 'black';});
 		i = document.createElement('input');
 		i.id = `${table.id}_system` + line_num;
 		i.pref = `${table.id}_system`;
@@ -624,11 +676,13 @@ function add_barlines() {
 		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
+		i.addEventListener('input', function(){this.style.color = 'black';});
 		i = document.createElement('input');
 		i.id = `${table.id}_measure` + line_num;
 		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
+		i.addEventListener('input', function(){this.style.color = 'black';});
 
 		function on_focus() {
 			t = this.parentElement.parentElement.parentElement.parentElement;
@@ -656,8 +710,23 @@ function add_barlines() {
 			if (isNaN(pg)) {
 				continue;
 			}
-			let sys = minus_to_plus(parseInt(document.getElementById('double_system'+i).value, 10), page[pg] + 1) ;
+			if (pg < 0 || pg >= total_pages) {
+				document.getElementById('double_page'+i).style.color = 'red';
+				inconsistency('page', 'Page');
+				return;
+			}
+			let sys = minus_to_plus(parseInt(document.getElementById('double_system'+i).value, 10), page[pg] + 1);
+			if (sys < 0 || sys >= page[pg]) {
+				document.getElementById('double_system'+i).style.color = 'red';
+				inconsistency('system', 'System');
+				return;
+			}
 			let bar = minus_to_plus(parseInt(document.getElementById('double_measure'+i).value, 10), system[pg][sys] + 1);
+			if (bar < 0 || bar >= system[pg][sys]) {
+				document.getElementById('double_measure'+i).style.color = 'red';
+				inconsistency('measure', 'Measure');
+				return;
+			}
 			measure[pg][sys][bar].barline = 'double';
 		}
 		for (i = 0; i < document.getElementById('repeat_left').num; i++) {
@@ -665,8 +734,23 @@ function add_barlines() {
 			if (isNaN(pg)) {
 				continue;
 			}
-			let sys = minus_to_plus(parseInt(document.getElementById('repeat_left_system'+i).value, 10), page[pg] + 1) ;
+			if (pg < 0 || pg >= total_pages) {
+				document.getElementById('repeat_left_page'+i).style.color = 'red';
+				inconsistency('page', 'Page');
+				return;
+			}
+			let sys = minus_to_plus(parseInt(document.getElementById('repeat_left_system'+i).value, 10), page[pg] + 1);
+			if (sys < 0 || sys >= page[pg]) {
+				document.getElementById('repeat_left_system'+i).style.color = 'red';
+				inconsistency('system', 'System');
+				return;
+			}
 			let bar = minus_to_plus(parseInt(document.getElementById('repeat_left_measure'+i).value, 10), system[pg][sys] + 1);
+			if (bar < 0 || bar >= system[pg][sys]) {
+				document.getElementById('repeat_lefte_measure'+i).style.color = 'red';
+				inconsistency('measure', 'Measure');
+				return;
+			}
 			measure[pg][sys][bar].barline = 'repeat_left';
 		}
 		for (i = 0; i < document.getElementById('repeat_right').num; i++) {
@@ -674,8 +758,23 @@ function add_barlines() {
 			if (isNaN(pg)) {
 				continue;
 			}
-			let sys = minus_to_plus(parseInt(document.getElementById('repeat_right_system'+i).value, 10), page[pg] + 1) ;
+			if (pg < 0 || pg >= total_pages) {
+				document.getElementById('repeat_right_page'+i).style.color = 'red';
+				inconsistency('page', 'Page');
+				return;
+			}
+			let sys = minus_to_plus(parseInt(document.getElementById('repeat_right_system'+i).value, 10), page[pg] + 1);
+			if (sys < 0 || sys >= page[pg]) {
+				document.getElementById('repeat_right_system'+i).style.color = 'red';
+				inconsistency('system', 'System');
+				return;
+			}
 			let bar = minus_to_plus(parseInt(document.getElementById('repeat_right_measure'+i).value, 10), system[pg][sys] + 1);
+			if (bar < 0 || bar >= system[pg][sys]) {
+				document.getElementById('repeat_right_measure'+i).style.color = 'red';
+				inconsistency('measure', 'Measure');
+				return;
+			}
 			measure[pg][sys][bar].barline = 'repeat_right';
 		}
 		for (i = 0; i < document.getElementById('end').num; i++) {
@@ -683,8 +782,23 @@ function add_barlines() {
 			if (isNaN(pg)) {
 				continue;
 			}
-			let sys = minus_to_plus(parseInt(document.getElementById('end_system'+i).value, 10), page[pg] + 1) ;
+			if (pg < 0 || pg >= total_pages) {
+				document.getElementById('end_page'+i).style.color = 'red';
+				inconsistency('page', 'Page');
+				return;
+			}
+			let sys = minus_to_plus(parseInt(document.getElementById('end_system'+i).value, 10), page[pg] + 1);
+			if (sys < 0 || sys >= page[pg]) {
+				document.getElementById('end_system'+i).style.color = 'red';
+				inconsistency('system', 'System');
+				return;
+			}
 			let bar = minus_to_plus(parseInt(document.getElementById('end_measure'+i).value, 10), system[pg][sys] + 1);
+			if (bar < 0 || bar >= system[pg][sys]) {
+				document.getElementById('end_measure'+i).style.color = 'red';
+				inconsistency('measure', 'Measure');
+				return;
+			}
 			measure[pg][sys][bar].barline = 'end';
 		}
 		fin ? finish() : add_key_signatures();
@@ -773,8 +887,23 @@ function add_key_signatures() {
 			if (isNaN(pg)) {
 				continue;
 			}
-			let sys = minus_to_plus(parseInt(document.getElementById('system'+i).value, 10), page[pg] + 1) ;
+			if (pg < 0 || pg >= total_pages) {
+				document.getElementById('double_page'+i).style.color = 'red';
+				inconsistency('page', 'Page');
+				return;
+			}
+			let sys = minus_to_plus(parseInt(document.getElementById('system'+i).value, 10), page[pg] + 1);
+			if (sys < 0 || sys >= page[pg]) {
+				document.getElementById('double_system'+i).style.color = 'red';
+				inconsistency('system', 'System');
+				return;
+			}
 			let bar = minus_to_plus(parseInt(document.getElementById('measure'+i).value, 10), system[pg][sys] + 1);
+			if (bar < 0 || bar >= system[pg][sys]) {
+				document.getElementById('double_measure'+i).style.color = 'red';
+				inconsistency('measure', 'Measure');
+				return;
+			}
 			measure[pg][sys][bar].key = document.getElementById('key'+i).value;
 		}
 		finish();
@@ -956,6 +1085,17 @@ function start_over() {
 	total = undefined;
 }
 
+function inconsistency(cause, Cause) {
+	if(confirm(`A ${cause} number you entered doesn't exist. That entry will be marked red.\nClick on 'Cancel' to check it. If correct, click on 'OK' to return to the '${Cause}' step.`)) {
+		if (cause == 'page') {
+			count_pages();
+		} else if (cause == 'system') {
+			count_systems();
+		} else {
+			count_measures();
+		}
+	}
+}
 function rnd() { // For generating eid
 	return Math.floor(Math.random() * 2000000000000);
 }
