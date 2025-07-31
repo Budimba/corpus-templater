@@ -231,7 +231,7 @@ function end_of_movements() {
 		row.insertCell().appendChild(document.createTextNode(`Mvt. ${i + 1} ends on `));
 		input_array.push([document.createElement('input'), document.createElement('input')]);
 		input_array[i][0].size = 2;
-		input_array[i][1].size = 1;
+		input_array[i][1].size = 2;
 		input_array[i][0].value = page_offset + i;
 		input_array[i][1].value = '-1';
 		input_array[i][0].addEventListener('focus', function(){this.select();});
@@ -265,7 +265,7 @@ function count_measures() {
 	document.getElementById('div').remove();
 	let div = document.createElement('div');
 	div.id = 'div';
-	div.innerHTML = '<b>Scroll through the score, and count the # of measures in each system:</b><br/>Rows = pages; columns = systems. Denote 10 ... 15 by a ... f.<br/>(The cursor hops automatically. You can also paste a string of numbers, e.g., 455436672ab34.)<br/>';
+	div.innerHTML = '<b>Scroll through the score, and count the # of measures in each system:</b><br/>Rows = pages; columns = systems. Denote 10 ... 15 by a ... f.<br/>(The cursor hops automatically. You can also paste a string of numbers, e.g., 455436672ab34.)<br/>(If you use a browser to view the PDF, you can type into its address bar, copy, and paste here.)<br/>';
 	document.body.appendChild(div);
 	let table = document.createElement('table');
 	div.appendChild(table);
@@ -348,12 +348,12 @@ function add_time_signatures() {
 		i.num = line_num;
 		i.pref = 'system';
 		i.auto = line_num == 0 ? false : true;
-		i.size = 1;
+		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
 		i = document.createElement('input');
 		i.id = 'measure' + line_num;
-		i.size = 1;
+		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
 		i = document.createElement('input');
@@ -621,12 +621,12 @@ function add_barlines() {
 		i.pref = `${table.id}_system`;
 		i.auto = line_num == 0 ? false : true;
 		i.num = line_num;
-		i.size = 1;
+		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
 		i = document.createElement('input');
 		i.id = `${table.id}_measure` + line_num;
-		i.size = 1;
+		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
 
@@ -738,17 +738,17 @@ function add_key_signatures() {
 		i.addEventListener('focus', on_focus);
 		i = document.createElement('input');
 		i.id = 'system' + line_num;
-		i.size = 1;
+		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
 		i = document.createElement('input');
 		i.id = 'measure' + line_num;
-		i.size = 1;
+		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', on_focus);
 		i = document.createElement('input');
 		i.id = 'key' + line_num;
-		i.size = 1;
+		i.size = 2;
 		row.insertCell().appendChild(i);
 		i.addEventListener('focus', function() {
 			if (line_num + 1 == num) {
@@ -935,6 +935,9 @@ function finish() {
 }
 
 function start_over() {
+	if (!confirm("Really start over?")) {
+		return;
+	}
 	document.getElementById('div').remove();
 	document.getElementById('rownum').disabled = false;
 	document.getElementById('rownum_next').disabled = false;
