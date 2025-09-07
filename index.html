@@ -960,16 +960,12 @@ function finish() {
 	}
 	if (measure == undefined) {
 		measure = new Array(total_pages);
-		duration = new Array(total_pages);
 		for (i = 0; i < total_pages; i++) {
 			measure[i] = new Array(page[i]);
-			duration[i] = new Array(page[i]);
 			for (j = 0; j < page[i]; j++) {
 				measure[i][j] = new Array(system[i][j]);
-				duration[i][j] = new Array(system[i][j]);
 				for (k = 0; k < system[i][j]; k++) {
 					measure[i][j][k] = {coord : [i, j, k]};
-					duration[i][j][k] = [3, 4];
 				}
 				if (section_break[i][j]) {
 					measure[i][j][system[i][j] - 1].barline = 'end';
@@ -977,6 +973,15 @@ function finish() {
 			}
 		measure[0][0][0].time = [3, 4];
 		}
+	}
+	if (duration == undefined) {
+		duration = new Array(total_pages);
+		for (i = 0; i < total_pages; i++) {
+			duration[i] = new Array(page[i]);
+			for (j = 0; j < page[i]; j++) {
+				duration[i][j] = new Array(system[i][j]);
+				for (k = 0; k < system[i][j]; k++) {
+					duration[i][j][k] = [3, 4];
 	}
 	if (measure[0][0][0].key == undefined) {
 		measure[0][0][0].key = 0;
